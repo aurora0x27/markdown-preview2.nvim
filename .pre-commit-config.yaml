@@ -1,0 +1,22 @@
+# See https://pre-commit.com for more information.
+#
+# Lua formatting is done with StyLua, using the repository's stylua.toml.
+# This hook uses the `stylua` binary from PATH (StyLua's official
+# `stylua-system` hook). To vendor StyLua instead, replace the `local` repo
+# below with:
+#
+#   - repo: https://github.com/JohnnyMorganz/StyLua
+#     rev: v2.6.0
+#     hooks:
+#       - id: stylua-system
+#
+# Enable the hooks with:  pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: stylua
+        name: stylua
+        description: An opinionated Lua code formatter
+        entry: stylua
+        language: system
+        files: \.lua$

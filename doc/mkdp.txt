@@ -1,0 +1,195 @@
+*mkdp.txt*   Markdown preview in the browser, for Neovim
+
+================================================================================
+CONTENTS                                                        *mkdp-contents*
+
+  1. Introduction ................................ |mkdp-introduction|
+  2. Requirements ................................ |mkdp-requirements|
+  3. Setup ....................................... |mkdp-setup|
+  4. Commands .................................... |mkdp-commands|
+  5. Mappings .................................... |mkdp-mappings|
+  6. Lua API ..................................... |mkdp-api|
+  7. Options ..................................... |mkdp-options|
+  8. Architecture ................................ |mkdp-architecture|
+  9. Health ...................................... |mkdp-health|
+
+================================================================================
+1. INTRODUCTION                                            *mkdp-introduction*
+
+mkdp previews the current Markdown buffer in a browser with synchronised
+scrolling, KaTeX, Mermaid, PlantUML, charts, diagrams and local images.
+
+It is a pure-Lua rewrite of iamcco/markdown-preview.nvim. The plugin logic
+lives entirely in Lua; a pre-bundled node server serves the frontend and talks
+back to the plugin over a single msgpack-rpc channel.
+
+================================================================================
+2. REQUIREMENTS                                            *mkdp-requirements*
+
+- Neovim 0.10 or newer.
+- `node` available in `$PATH` (used to run the bundled server).
+
+The server bundle (`app/dist/mkdp-server.cjs`) is committed, so no package
+install is required at runtime.
+
+================================================================================
+3. SETUP                                                          *mkdp-setup*
+
+>
+    require('mkdp').setup {
+      auto_close = true,
+      filetypes = { 'markdown' },
+      -- see |mkdp-options| for the full list
+    }
+<
+
+`setup()` registers the commands and autocmds. Calling it again replaces the
+configuration.
+
+================================================================================
+4. COMMANDS                                                    *mkdp-commands*
+
+:MarkdownPreview                                                *:MarkdownPreview*
+        Start the preview server (if needed) and open the browser.
+
+:MarkdownPreviewStop                                        *:MarkdownPreviewStop*
+        Stop the preview server and close every preview page.
+
+:MarkdownPreviewToggle                                    *:MarkdownPreviewToggle*
+        Toggle the preview for the current buffer.
+
+By default the commands are only available in the filetypes listed in
+`filetypes`. Set `command_for_global = true` to make them global.
+
+================================================================================
+5. MAPPINGS                                                  *mkdp-mappings*
+
+                                                                *<Plug>MarkdownPreview*
+                                                                *<Plug>MarkdownPreviewStop*
+                                                                *<Plug>MarkdownPreviewToggle*
+
+>
+    nmap <C-s> <Plug>MarkdownPreview
+    nmap <M-s> <Plug>MarkdownPreviewStop
+    nmap <C-p> <Plug>MarkdownPreviewToggle
+<
+
+================================================================================
+6. LUA API                                                        *mkdp-api*
+
+`require('mkdp').setup(opts)`                                   *mkdp.setup()*
+        Configure the plugin.
+
+`require('mkdp').open()`                                         *mkdp.open()*
+        Start the server if needed and open the preview.
+
+`require('mkdp').close()`                                       *mkdp.close()*
+        Stop the server and close all preview pages.
+
+`require('mkdp').toggle()`                                    *mkdp.toggle()*
+        Toggle the preview for the current buffer.
+
+`require('mkdp').status()`                                    *mkdp.status()*
+        Return `true` when the server is running.
+
+`require('mkdp').install()`                                  *mkdp.install()*
+        Rebuild the bundled server. Requires `node` and `npm`.
+
+================================================================================
+7. OPTIONS                                                    *mkdp-options*
+
+`auto_start` (boolean, default `false`)
+        Open the preview after entering a matching buffer.
+
+`auto_close` (boolean, default `true`)
+        Close the preview page when a buffer is hidden.
+
+`refresh_slow` (boolean, default `false`)
+        Refresh only on `CursorHold`, `BufWrite` and `InsertLeave` instead of
+        on every cursor move.
+
+`command_for_global` (boolean, default `false`)
+        Make the commands available for every filetype.
+
+`filetypes` (table, default `{ 'markdown' }`)
+        Filetypes that get the commands.
+
+`open_to_the_world` (boolean, default `false`)
+        Listen on `0.0.0.0` instead of `127.0.0.1`.
+
+`open_ip` (string, default `''`)
+        Custom ip used to build the preview url.
+
+`port` (integer, default `nil`)
+        Fixed server port; `nil` picks a random free one.
+
+`browser` (string, default `''`)
+        Browser command used to open the preview. Empty uses the system
+        default.
+
+`browserfunc` (function, default `nil`)
+        `function(url) ... end`, called instead of launching a browser.
+
+`echo_preview_url` (boolean, default `false`)
+        Echo the preview url in the command line.
+
+`page_title` (string, default `'「${name}」'`)
+        Preview page title. `${name}` is replaced with the file name.
+
+`theme` (string, default `''`)
+        `'dark'`, `'light'` or `''` to follow the OS preference.
+
+`markdown_css` / `highlight_css` (string, default `nil`)
+        Absolute paths to custom css files.
+
+`images_path` (string, default `nil`)
+        Custom directory used to resolve local images.
+
+`combine_preview` (boolean, default `false`)
+        Reuse a single browser window for several previews.
+
+`combine_preview_auto_refresh` (boolean, default `true`)
+        Refetch the combined preview when switching buffers.
+
+`preview_options` (table)                                   *mkdp.preview_options*
+        Markdown rendering options passed to the frontend:
+>
+        {
+          mkit = {},                     -- markdown-it options
+          katex = {},                    -- KaTeX options
+          uml = {},                      -- plantuml options
+          maid = {},                     -- mermaid options
+          disable_sync_scroll = false,
+          sync_scroll_type = 'middle',   -- 'middle' | 'top' | 'relative'
+          hide_yaml_meta = true,
+          sequence_diagrams = {},
+          flowchart_diagrams = {},
+          content_editable = false,
+          disable_filename = false,
+          toc = {},
+        }
+<
+
+================================================================================
+8. ARCHITECTURE                                            *mkdp-architecture*
+
+Neovim starts `node app/dist/mkdp-server.cjs` as an rpc job channel. The server
+serves the frontend over http and pushes content to the browser over
+socket.io.
+
+Plugin -> server (|rpcnotify()| / |rpcrequest()|):
+        `refresh_content`, `close_page`, `open_browser`, `close_all_pages`
+
+Server -> plugin (through `require('mkdp')._rpc`):
+        `echo`, `echo_url`, `browserfunc`, `open_browser`
+
+The configuration is mirrored to the `g:mkdp_*` variables so the server can
+read it with the standard neovim API.
+
+================================================================================
+9. HEALTH                                                      *mkdp-health*
+
+Run `:checkhealth mkdp` to verify that `node` is available and that the server
+bundle exists.
+
+vim:tw=78:ts=8:ft=help:norl:

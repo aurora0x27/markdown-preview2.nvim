@@ -1,0 +1,17 @@
+{
+  "name": "mkdp-server",
+  "version": "0.1.0",
+  "description": "markdown preview server for the mkdp neovim plugin",
+  "private": true,
+  "main": "entry.js",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "@chemzqm/neovim": "^5.7.9",
+    "socket.io": "2.4.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.5"
+  }
+}
