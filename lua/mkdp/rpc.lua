@@ -133,6 +133,7 @@ function M.dispatch(method, args)
         util.echo_messages('Error', tostring(err))
       end
     elseif type(fn) == 'string' and fn ~= '' then
+      ---@diagnostic disable-next-line
       pcall(vim.cmd, 'silent! call ' .. fn .. '(' .. vim.fn.string(args) .. ')')
     end
   elseif method == 'open_browser' then

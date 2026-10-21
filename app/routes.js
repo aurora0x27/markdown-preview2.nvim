@@ -21,6 +21,18 @@ use((req, res, next) => {
   next()
 })
 
+// The frontend rewrites the url from /page/:number to /:number (see
+// window.history.replaceState in the page bundle). Redirect it back so a
+// browser refresh loads index.html again and the app can parse the bufnr.
+use((req, res, next) => {
+  const match = req.asPath.match(/^\/(\d+)\/?$/)
+  if (match) {
+    res.writeHead(302, { Location: `/page/${match[1]}` })
+    return res.end()
+  }
+  next()
+})
+
 // /_next/... -> next.js static chunks
 use((req, res, next) => {
   if (/^\/_next\//.test(req.asPath)) {

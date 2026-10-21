@@ -20585,6 +20585,14 @@ var require_routes = __commonJS({
       next();
     });
     use((req, res, next) => {
+      const match = req.asPath.match(/^\/(\d+)\/?$/);
+      if (match) {
+        res.writeHead(302, { Location: `/page/${match[1]}` });
+        return res.end();
+      }
+      next();
+    });
+    use((req, res, next) => {
       if (/^\/_next\//.test(req.asPath)) {
         const file = path.join(OUT_DIR, req.asPath);
         if (fs.existsSync(file) && fs.statSync(file).isFile()) {
